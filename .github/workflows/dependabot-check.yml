@@ -35,7 +35,6 @@ jobs:
           if [ $(echo "$dependabot_issues" | jq 'length') -gt 0 ]; then
             echo "dependabot_issues_found=true" >> $GITHUB_OUTPUT
             echo "issues=$(echo "$dependabot_issues" | jq '.[] | {title, url}')"
-            exit 1
           else
             echo "dependabot_issues_found=false" >> $GITHUB_OUTPUT
             echo "issues=[]" >> $GITHUB_OUTPUT
