@@ -1,0 +1,42 @@
+name: Check for Open Dependabot Issues
+
+on:
+  workflow_call:
+    outputs:
+      dependabot_issues_found:
+        value:
+          ${{ jobs.Check_Dependabot_Issues.outputs.dependabot_issues_found }}
+      issues:
+        value: ${{ jobs.Check_Dependabot_Issues.outputs.issues}}
+
+jobs:
+  Check_Dependabot_Issues:
+    name: Check for Open Dependabot Issues
+    runs-on: ubuntu-latest
+    outputs:
+      dependabot_issues_found:
+        ${{ steps.check_dependabot_issues.outputs.dependabot_issues_found }}
+      issues: ${{ steps.check_dependabot_issues.outputs.issues }}
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Fetch Open Issues
+        id: check_dependabot_issues
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          issues=$(curl -s -H "Authorization: Bearer $GITHUB_TOKEN" \
+              -H "Accept: application/vnd.github.v3+json" \
+              "https://api.github.com/repos/${{ github.repository }}/issues?state=open")
+
+          dependabot_issues=$(echo "$issues" | jq '[.[] | select(.user.login | contains("dependabot"))]')
+
+          if [ $(echo "$dependabot_issues" | jq 'length') -gt 0 ]; then
+            echo "dependabot_issues_found=true" >> $GITHUB_OUTPUT
+            echo "issues=$(echo "$dependabot_issues" | jq '.[] | {title, url}')"
+            exit 1
+          else
+            echo "dependabot_issues_found=false" >> $GITHUB_OUTPUT
+            echo "issues=[]" >> $GITHUB_OUTPUT
+          fi
